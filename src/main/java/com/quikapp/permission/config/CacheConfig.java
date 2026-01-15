@@ -1,4 +1,4 @@
-package com.quikapp.permission.config;
+package com.quckapp.permission.config;
 
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;

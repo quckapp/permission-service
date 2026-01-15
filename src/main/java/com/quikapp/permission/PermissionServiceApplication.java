@@ -1,4 +1,4 @@
-package com.quikapp.permission;
+package com.quckapp.permission;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,7 +6,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 /**
- * QuikApp Permission Service - RBAC with Casbin
+ * QuckApp Permission Service - RBAC with Casbin
  *
  * Features:
  * - Role-Based Access Control (RBAC)

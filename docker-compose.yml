@@ -5,14 +5,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: quikapp-permission-service
+    container_name: quckapp-permission-service
     ports:
       - "8083:8083"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - MYSQL_HOST=mysql
       - MYSQL_PORT=3306
-      - MYSQL_DATABASE=quikapp_permissions
+      - MYSQL_DATABASE=quckapp_permissions
       - MYSQL_USERNAME=root
       - MYSQL_PASSWORD=password
       - REDIS_HOST=redis
@@ -23,17 +23,17 @@ services:
       redis:
         condition: service_started
     networks:
-      - quikapp-network
+      - quckapp-network
     restart: unless-stopped
 
   mysql:
     image: mysql:8.0
-    container_name: quikapp-permission-mysql
+    container_name: quckapp-permission-mysql
     ports:
       - "3308:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=quikapp_permissions
+      - MYSQL_DATABASE=quckapp_permissions
     volumes:
       - permission-mysql-data:/var/lib/mysql
     healthcheck:
@@ -42,22 +42,22 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - quikapp-network
+      - quckapp-network
 
   redis:
     image: redis:7-alpine
-    container_name: quikapp-permission-redis
+    container_name: quckapp-permission-redis
     ports:
       - "6381:6379"
     volumes:
       - permission-redis-data:/data
     networks:
-      - quikapp-network
+      - quckapp-network
 
 volumes:
   permission-mysql-data:
   permission-redis-data:
 
 networks:
-  quikapp-network:
+  quckapp-network:
     driver: bridge

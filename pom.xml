@@ -11,11 +11,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.quikapp</groupId>
+    <groupId>com.quckapp</groupId>
     <artifactId>permission-service</artifactId>
     <version>1.0.0</version>
-    <name>QuikApp Permission Service</name>
-    <description>RBAC permission management with Casbin for QuikApp</description>
+    <name>QuckApp Permission Service</name>
+    <description>RBAC permission management with Casbin for QuckApp</description>
 
     <properties>
         <java.version>21</java.version>

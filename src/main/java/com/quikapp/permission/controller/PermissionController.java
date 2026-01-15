@@ -1,7 +1,7 @@
-package com.quikapp.permission.controller;
+package com.quckapp.permission.controller;
 
-import com.quikapp.permission.dto.PermissionDtos.*;
-import com.quikapp.permission.service.PermissionService;
+import com.quckapp.permission.dto.PermissionDtos.*;
+import com.quckapp.permission.service.PermissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

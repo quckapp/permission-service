@@ -1,4 +1,4 @@
-package com.quikapp.permission.dto;
+package com.quckapp.permission.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.*;

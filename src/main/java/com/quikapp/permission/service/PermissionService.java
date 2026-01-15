@@ -1,9 +1,9 @@
-package com.quikapp.permission.service;
+package com.quckapp.permission.service;
 
-import com.quikapp.permission.domain.entity.*;
-import com.quikapp.permission.domain.repository.*;
-import com.quikapp.permission.dto.PermissionDtos.*;
-import com.quikapp.permission.exception.*;
+import com.quckapp.permission.domain.entity.*;
+import com.quckapp.permission.domain.repository.*;
+import com.quckapp.permission.dto.PermissionDtos.*;
+import com.quckapp.permission.exception.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;

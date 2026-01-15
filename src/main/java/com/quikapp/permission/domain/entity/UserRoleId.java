@@ -1,4 +1,4 @@
-package com.quikapp.permission.domain.entity;
+package com.quckapp.permission.domain.entity;
 
 import lombok.*;
 

@@ -1,7 +1,7 @@
-package com.quikapp.permission.domain.repository;
+package com.quckapp.permission.domain.repository;
 
-import com.quikapp.permission.domain.entity.UserRole;
-import com.quikapp.permission.domain.entity.UserRoleId;
+import com.quckapp.permission.domain.entity.UserRole;
+import com.quckapp.permission.domain.entity.UserRoleId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

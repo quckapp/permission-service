@@ -1,6 +1,6 @@
-package com.quikapp.permission.exception;
+package com.quckapp.permission.exception;
 
-import com.quikapp.permission.dto.PermissionDtos.ApiResponse;
+import com.quckapp.permission.dto.PermissionDtos.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

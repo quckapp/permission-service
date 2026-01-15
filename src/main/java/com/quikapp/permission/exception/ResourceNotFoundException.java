@@ -1,4 +1,4 @@
-package com.quikapp.permission.exception;
+package com.quckapp.permission.exception;
 
 public class ResourceNotFoundException extends RuntimeException {
     public ResourceNotFoundException(String message) {
