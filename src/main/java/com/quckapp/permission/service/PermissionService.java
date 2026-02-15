@@ -4,6 +4,7 @@ import com.quckapp.permission.domain.entity.*;
 import com.quckapp.permission.domain.repository.*;
 import com.quckapp.permission.dto.PermissionDtos.*;
 import com.quckapp.permission.exception.*;
+import com.quckapp.permission.kafka.PermissionEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -23,6 +24,8 @@ public class PermissionService {
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final UserRoleRepository userRoleRepository;
+    private final PermissionEventPublisher eventPublisher;
+    private final CasbinPolicySyncService casbinPolicySyncService;
 
     // ===== Role Operations =====
 
@@ -45,6 +48,8 @@ public class PermissionService {
 
         role = roleRepository.save(role);
         log.info("Created role {} in workspace {}", role.getName(), role.getWorkspaceId());
+        casbinPolicySyncService.syncRolePermissions(role);
+        eventPublisher.publishRoleCreated(role);
         return mapToRoleResponse(role);
     }
 
@@ -78,6 +83,10 @@ public class PermissionService {
         }
 
         role = roleRepository.save(role);
+        // Re-sync Casbin policies for the updated role
+        casbinPolicySyncService.removeRolePolicies(role.getId(), role.getWorkspaceId());
+        casbinPolicySyncService.syncRolePermissions(role);
+        eventPublisher.publishRoleUpdated(role);
         return mapToRoleResponse(role);
     }
 
@@ -86,7 +95,11 @@ public class PermissionService {
         Role role = roleRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
         if (role.isSystem()) throw new IllegalStateException("Cannot delete system role");
+        UUID workspaceId = role.getWorkspaceId();
+        String roleName = role.getName();
+        casbinPolicySyncService.removeRolePolicies(id, workspaceId);
         roleRepository.delete(role);
+        eventPublisher.publishRoleDeleted(id, workspaceId, roleName);
     }
 
     // ===== Permission Operations =====
@@ -122,6 +135,8 @@ public class PermissionService {
 
         userRole = userRoleRepository.save(userRole);
         log.info("Assigned role {} to user {} in workspace {}", role.getName(), request.getUserId(), request.getWorkspaceId());
+        casbinPolicySyncService.addUserRoleAssignment(request.getUserId(), request.getRoleId(), request.getWorkspaceId());
+        eventPublisher.publishUserRoleAssigned(userRole, role.getName());
 
         return UserRoleResponse.builder()
             .userId(userRole.getUserId())
@@ -138,6 +153,8 @@ public class PermissionService {
     public void revokeRole(UUID userId, UUID roleId, UUID workspaceId) {
         userRoleRepository.deleteByUserIdAndRoleIdAndWorkspaceId(userId, roleId, workspaceId);
         log.info("Revoked role {} from user {} in workspace {}", roleId, userId, workspaceId);
+        casbinPolicySyncService.removeUserRoleAssignment(userId, roleId, workspaceId);
+        eventPublisher.publishUserRoleRevoked(userId, roleId, workspaceId);
     }
 
     @Cacheable(value = "userPermissions", key = "#userId + ':' + #workspaceId")
@@ -164,14 +181,27 @@ public class PermissionService {
 
     @Transactional(readOnly = true)
     public PermissionCheckResponse checkPermission(CheckPermissionRequest request) {
-        UserPermissionsResponse userPerms = getUserPermissions(request.getUserId(), request.getWorkspaceId());
-        String permKey = request.getResource() + ":" + request.getAction();
+        // Use Casbin enforcer for permission check
+        boolean allowed = casbinPolicySyncService.checkPermission(
+            request.getUserId(),
+            request.getWorkspaceId(),
+            request.getResource(),
+            request.getAction()
+        );
 
-        boolean allowed = userPerms.getPermissions().contains(permKey) || userPerms.getPermissions().contains(request.getResource() + ":*");
+        // Fallback: also check for wildcard permission
+        if (!allowed) {
+            allowed = casbinPolicySyncService.checkPermission(
+                request.getUserId(),
+                request.getWorkspaceId(),
+                request.getResource(),
+                "*"
+            );
+        }
 
         return PermissionCheckResponse.builder()
             .allowed(allowed)
-            .reason(allowed ? "Permission granted" : "Permission denied")
+            .reason(allowed ? "Permission granted via Casbin" : "Permission denied")
             .build();
     }
 

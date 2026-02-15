@@ -1,0 +1,113 @@
+# =============================================================================
+# LIVE Environment - Docker Compose
+# =============================================================================
+# Infrastructure for live environment
+# Usage: docker-compose -f docker/docker-compose-live.yml up -d
+# =============================================================================
+
+version: '3.8'
+
+services:
+  permission-mysql-live:
+    image: mysql:8.0
+    container_name: permission-mysql-live
+    ports:
+      - "3309:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: quckapp_permissions
+    volumes:
+      - permission_mysql_live_data:/var/lib/mysql
+    networks:
+      - permission-live-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  permission-redis-live:
+    image: redis:7-alpine
+    container_name: permission-redis-live
+    ports:
+      - "6381:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - permission_redis_live_data:/data
+    networks:
+      - permission-live-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  permission-zookeeper-live:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: permission-zookeeper-live
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - permission_zookeeper_live_data:/var/lib/zookeeper/data
+    networks:
+      - permission-live-network
+    healthcheck:
+      test: echo srvr | nc localhost 2181 || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  permission-kafka-live:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: permission-kafka-live
+    ports:
+      - "29094:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: permission-zookeeper-live:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://permission-kafka-live:9092,PLAINTEXT_HOST://localhost:29094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+    volumes:
+      - permission_kafka_live_data:/var/lib/kafka/data
+    depends_on:
+      permission-zookeeper-live:
+        condition: service_healthy
+    networks:
+      - permission-live-network
+    healthcheck:
+      test: kafka-topics --bootstrap-server localhost:9092 --list || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  permission_mysql_live_data:
+  permission_redis_live_data:
+  permission_zookeeper_live_data:
+  permission_kafka_live_data:
+
+networks:
+  permission-live-network:
+    driver: bridge

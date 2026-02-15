@@ -1,14 +1,14 @@
 server:
-  port: 8083
+  port: ${PORT:8083}
 
 spring:
   application:
     name: permission-service
 
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:quckapp_permissions}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3309}/${MYSQL_DATABASE:quckapp_permissions}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${MYSQL_USERNAME:root}
-    password: ${MYSQL_PASSWORD:password}
+    password: ${MYSQL_PASSWORD:root_secret}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
@@ -39,19 +39,35 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      port: ${REDIS_PORT:6381}
+      password: ${REDIS_PASSWORD:redis_secret}
       timeout: 2000ms
       lettuce:
         pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 2
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
 
   cache:
     type: redis
     redis:
       time-to-live: 1800000
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+
+app:
+  kafka:
+    topics:
+      permission-events: ${KAFKA_PERMISSION_EVENTS_TOPIC:quckapp.permissions.events}
 
 logging:
   level:
@@ -78,9 +94,19 @@ management:
 springdoc:
   api-docs:
     path: /api-docs
+    enabled: true
   swagger-ui:
     path: /swagger-ui.html
+    enabled: true
     operationsSorter: method
+    tagsSorter: alpha
+    displayRequestDuration: true
+    persistAuthorization: true
+    tryItOutEnabled: true
+  packages-to-scan: com.quckapp.permission.controller
+  paths-to-match: /api/**
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
 
 ---
 spring:
@@ -99,6 +125,23 @@ spring:
 spring:
   config:
     activate:
+      on-profile: local
+
+  datasource:
+    url: jdbc:mysql://localhost:3309/quckapp_permissions?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+
+  data:
+    redis:
+      host: localhost
+      port: 6381
+
+  kafka:
+    bootstrap-servers: localhost:9094
+
+---
+spring:
+  config:
+    activate:
       on-profile: test
 
   datasource:
@@ -110,6 +153,25 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+    show-sql: false
 
   flyway:
     enabled: false
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  cache:
+    type: simple
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+
+logging:
+  level:
+    root: WARN
+    com.quckapp.permission: DEBUG
